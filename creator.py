@@ -11,7 +11,8 @@ st.set_page_config(layout="wide")
 @st.cache_resource
 def init_opentire():
     """Initializes the OpenTire library instance."""
-    return opentire.OpenTire() # Access the class from the module
+    # Access the OpenTire class from the main opentire module
+    return opentire.OpenTire()
 
 openTire = init_opentire()
 
@@ -35,14 +36,12 @@ if uploaded_file is not None:
     
     col_options = list(data.columns)
 
-    # Helper function to find a column index safely, defaulting to 0 if not found
     def get_col_index(name, options):
         try:
             return options.index(name)
         except ValueError:
             return 0
 
-    # Map all required inputs and outputs using the safe index function
     map_sa = st.sidebar.selectbox(
         "Slip Angle (SA) Column", col_options, index=get_col_index("SLIP_ANGLE", col_options)
     )
@@ -64,17 +63,16 @@ if uploaded_file is not None:
     
     # --- Fitting Controls ---
     st.sidebar.header("3. Run Fitter")
-    fit_button = st.sidebar.button("Fit PAC2022 Model")
+    fit_button = st.sidebar.button("Fit PAC2002 Model")
 
     # --- Main App Logic ---
     if fit_button:
         try:
             with st.spinner("Fitting model... This may take a moment."):
-                # 1. Create the model and correctly instantiate the Fitter
                 tire_model = openTire.createmodel('PAC2002')
-                fitter = opentire.Fitter(tire_model) # Access Fitter from the module
+                # Access the Fitter class from the main opentire module
+                fitter = opentire.Fitter(tire_model)
 
-                # 2. Load data, converting pressure from kPa (if needed) to Pascals
                 fitter.load_data(SA=data[map_sa].values,
                                  SR=data[map_sr].values,
                                  FY=data[map_fy].values,
@@ -82,7 +80,6 @@ if uploaded_file is not None:
                                  FZ=data[map_fz].values,
                                  P=data[map_p].values * 1000)
                 
-                # 3. Run the fitting process
                 fitter.fit()
             
             st.success("✅ Fitting complete!")
@@ -91,11 +88,10 @@ if uploaded_file is not None:
             st.header("📊 Fit Comparison")
             col1, col2 = st.columns(2)
 
-            # Use mean values from the data as constant conditions for plotting curves
             fz_mean = data[map_fz].mean()
-            p_mean = data[map_p].mean() * 1000 # In Pascals
+            p_mean = data[map_p].mean() * 1000
 
-            # --- Plot 1: Lateral Force ---
+            # Plot 1: Lateral Force
             with col1:
                 st.subheader("Lateral Force vs. Slip Angle")
                 lateral_data = data[abs(data[map_sr]) < 0.01]
@@ -111,7 +107,7 @@ if uploaded_file is not None:
                 ax.grid(True)
                 st.pyplot(fig)
 
-            # --- Plot 2: Longitudinal Force ---
+            # Plot 2: Longitudinal Force
             with col2:
                 st.subheader("Longitudinal Force vs. Slip Ratio")
                 longitudinal_data = data[abs(data[map_sa]) < 1.0]
@@ -127,7 +123,7 @@ if uploaded_file is not None:
                 ax.grid(True)
                 st.pyplot(fig)
             
-            # --- Display Fitted Parameters ---
+            # Display Fitted Parameters
             st.header("📄 Fitted Parameters")
             fitted_params = {p: tire_model.get_parameter(p) for p in tire_model.get_parameter_list()}
             st.json(fitted_params)
