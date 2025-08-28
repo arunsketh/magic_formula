@@ -2,8 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from opentire import OpenTire
-from opentire.Fitter import Fitter # Correctly import the Fitter class
+import opentire # Import the main module
 
 # --- App Configuration ---
 st.set_page_config(layout="wide")
@@ -12,7 +11,7 @@ st.set_page_config(layout="wide")
 @st.cache_resource
 def init_opentire():
     """Initializes the OpenTire library instance."""
-    return OpenTire()
+    return opentire.OpenTire() # Access the class from the module
 
 openTire = init_opentire()
 
@@ -65,7 +64,7 @@ if uploaded_file is not None:
     
     # --- Fitting Controls ---
     st.sidebar.header("3. Run Fitter")
-    fit_button = st.sidebar.button("Fit PAC2002 Model")
+    fit_button = st.sidebar.button("Fit PAC2022 Model")
 
     # --- Main App Logic ---
     if fit_button:
@@ -73,7 +72,7 @@ if uploaded_file is not None:
             with st.spinner("Fitting model... This may take a moment."):
                 # 1. Create the model and correctly instantiate the Fitter
                 tire_model = openTire.createmodel('PAC2002')
-                fitter = Fitter(tire_model) # Correct Fitter instantiation
+                fitter = opentire.Fitter(tire_model) # Access Fitter from the module
 
                 # 2. Load data, converting pressure from kPa (if needed) to Pascals
                 fitter.load_data(SA=data[map_sa].values,
