@@ -83,7 +83,7 @@ if uploaded_file is not None:
                         x_data, 
                         y_data, 
                         p0=initial_guesses, 
-                        maxfev=5000  # Increase max function evaluations
+                        maxfev=500000  # Increase max function evaluations
                     )
                 
                 st.success("✅ Fitting complete!")
