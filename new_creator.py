@@ -14,15 +14,12 @@ def magic_formula(x, B, C, D, E):
     x: Slip angle in degrees
     B, C, D, E: Model coefficients
     """
-    # The Pacejka 'Magic Formula'
-    # Y(x) = D * sin(C * arctan(B*x - E*(B*x - arctan(B*x))))
-    # We convert the slip angle (x) to radians for the trig functions
     x_rad = np.deg2rad(x)
     b_x = B * x_rad
     return D * np.sin(C * np.arctan(b_x - E * (b_x - np.arctan(b_x))))
 
 # --- App Title and Description ---
-st.title("Magic Formula Tire Model Fitter  Tire")
+st.title("Magic Formula Tire Model Fitter  टायर")
 st.markdown("""
 This app fits a tire's lateral force data to the Pacejka Magic Formula using SciPy. 
 Upload a CSV file with slip angle and lateral force data to get started.
@@ -33,7 +30,9 @@ st.sidebar.header("1. Upload Data")
 uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
 
 if uploaded_file is not None:
-    data = pd.read_csv(uploaded_file)
+    # Read the CSV, explicitly setting the separator to a comma
+    data = pd.read_csv(uploaded_file, sep=',')
+    
     st.sidebar.success("File uploaded successfully!")
     st.subheader("Uploaded Data Preview")
     st.dataframe(data.head())
@@ -53,13 +52,12 @@ if uploaded_file is not None:
     if fit_button:
         try:
             with st.spinner("Finding the magic... ✨"):
-                # Extract data from the selected columns
-                x_data = data[map_sa]
-                y_data = data[map_fy]
+                # Extract data, ensuring it's treated as numeric
+                x_data = pd.to_numeric(data[map_sa])
+                y_data = pd.to_numeric(data[map_fy])
                 
-                # Provide an initial guess for the parameters to help the fitter converge
-                # These are typical starting values for a standard tire
-                initial_guesses = [10, 1.9, max(y_data), 0.97] # B, C, D, E
+                # Provide an initial guess for the parameters
+                initial_guesses = [10, 1.9, max(abs(y_data)), 0.97] # B, C, D, E
                 
                 # Use SciPy's curve_fit to find the best parameters
                 popt, pcov = curve_fit(magic_formula, x_data, y_data, p0=initial_guesses)
@@ -99,6 +97,7 @@ if uploaded_file is not None:
 
         except Exception as e:
             st.error(f"An error occurred during fitting: {e}")
+            st.warning("Tip: Make sure the selected columns contain only numeric data and that your CSV file is formatted correctly.")
 
 else:
     st.info("Please upload a CSV file to begin.")
