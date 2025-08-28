@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from opentire import OpenTire
+from opentire.Fitter import Fitter # Correctly import the Fitter class
 
 # --- App Configuration ---
 st.set_page_config(layout="wide")
@@ -32,23 +33,35 @@ if uploaded_file is not None:
     # --- Column Mapping ---
     st.sidebar.header("2. Map Data Columns")
     st.sidebar.info("Map the columns in your CSV to the required tire properties.")
-
     
     col_options = list(data.columns)
-    # Map all required inputs and outputs
+
+    # Helper function to find a column index safely, defaulting to 0 if not found
     def get_col_index(name, options):
         try:
             return options.index(name)
         except ValueError:
             return 0
-    
+
     # Map all required inputs and outputs using the safe index function
-    map_sa = st.sidebar.selectbox("Slip Angle (SA) Column", col_options, index=get_col_index("SLIP_ANGLE", col_options))
-    map_sr = st.sidebar.selectbox("Slip Ratio (SR) Column", col_options, index=get_col_index("SLIP_RATIO", col_options))
-    map_fz = st.sidebar.selectbox("Normal Load (FZ) Column", col_options, index=get_col_index("NORMAL_LOAD", col_options))
-    map_p = st.sidebar.selectbox("Inflation Pressure (P) Column", col_options, index=get_col_index("INFLATION_PRESSURE", col_options))
-    map_fy = st.sidebar.selectbox("Lateral Force (FY) Column", col_options, index=get_col_index("LATERAL_FORCE", col_options))
-    map_fx = st.sidebar.selectbox("Longitudinal Force (FX) Column", col_options, index=get_col_index("LONGITUDINAL_FORCE", col_options))
+    map_sa = st.sidebar.selectbox(
+        "Slip Angle (SA) Column", col_options, index=get_col_index("SLIP_ANGLE", col_options)
+    )
+    map_sr = st.sidebar.selectbox(
+        "Slip Ratio (SR) Column", col_options, index=get_col_index("SLIP_RATIO", col_options)
+    )
+    map_fz = st.sidebar.selectbox(
+        "Normal Load (FZ) Column", col_options, index=get_col_index("NORMAL_LOAD", col_options)
+    )
+    map_p = st.sidebar.selectbox(
+        "Inflation Pressure (P) Column", col_options, index=get_col_index("INFLATION_PRESSURE", col_options)
+    )
+    map_fy = st.sidebar.selectbox(
+        "Lateral Force (FY) Column", col_options, index=get_col_index("LATERAL_FORCE", col_options)
+    )
+    map_fx = st.sidebar.selectbox(
+        "Longitudinal Force (FX) Column", col_options, index=get_col_index("LONGITUDINAL_FORCE", col_options)
+    )
     
     # --- Fitting Controls ---
     st.sidebar.header("3. Run Fitter")
@@ -58,18 +71,19 @@ if uploaded_file is not None:
     if fit_button:
         try:
             with st.spinner("Fitting model... This may take a moment."):
+                # 1. Create the model and correctly instantiate the Fitter
                 tire_model = openTire.createmodel('PAC2002')
-                fitter = openTire.createfitter(tire_model)
+                fitter = Fitter(tire_model) # Correct Fitter instantiation
 
-                # Load data with the new mappings for SR and P
-                # NOTE: Pressure (P) must be in Pascals for the model.
+                # 2. Load data, converting pressure from kPa (if needed) to Pascals
                 fitter.load_data(SA=data[map_sa].values,
                                  SR=data[map_sr].values,
                                  FY=data[map_fy].values,
                                  FX=data[map_fx].values,
                                  FZ=data[map_fz].values,
-                                 P=data[map_p].values * 1000) # Convert kPa to Pa
+                                 P=data[map_p].values * 1000)
                 
+                # 3. Run the fitting process
                 fitter.fit()
             
             st.success("✅ Fitting complete!")
@@ -85,10 +99,7 @@ if uploaded_file is not None:
             # --- Plot 1: Lateral Force ---
             with col1:
                 st.subheader("Lateral Force vs. Slip Angle")
-                # Filter data for pure-slip lateral conditions (low slip ratio)
                 lateral_data = data[abs(data[map_sr]) < 0.01]
-
-                # Generate fitted curve
                 sa_range = np.linspace(data[map_sa].min(), data[map_sa].max(), 100)
                 fy_fitted = [tire_model.solve({'SA': np.deg2rad(sa), 'FZ': fz_mean, 'P': p_mean, 'SR': 0})['FY'] for sa in sa_range]
 
@@ -104,10 +115,7 @@ if uploaded_file is not None:
             # --- Plot 2: Longitudinal Force ---
             with col2:
                 st.subheader("Longitudinal Force vs. Slip Ratio")
-                # Filter data for pure-slip longitudinal conditions (low slip angle)
                 longitudinal_data = data[abs(data[map_sa]) < 1.0]
-
-                # Generate fitted curve
                 sr_range = np.linspace(data[map_sr].min(), data[map_sr].max(), 100)
                 fx_fitted = [tire_model.solve({'SR': sr, 'FZ': fz_mean, 'P': p_mean, 'SA': 0})['FX'] for sr in sr_range]
 
