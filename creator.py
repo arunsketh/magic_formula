@@ -11,7 +11,6 @@ st.set_page_config(layout="wide")
 @st.cache_resource
 def init_opentire():
     """Initializes the OpenTire library instance."""
-    # Access the OpenTire class from the main opentire module
     return opentire.OpenTire()
 
 openTire = init_opentire()
