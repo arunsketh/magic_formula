@@ -56,9 +56,35 @@ if uploaded_file is not None:
                     x_data = pd.to_numeric(data[map_sa])
                     y_data = pd.to_numeric(data[map_fy])
                     
-                    initial_guesses = [10, 1.9, max(abs(y_data)), 0.97]
+                    # --- Smarter Initial Guesses ---
+                    # 1. Guess D as the maximum absolute force
+                    D_guess = max(abs(y_data))
                     
-                    popt, pcov = curve_fit(magic_formula, x_data, y_data, p0=initial_guesses)
+                    # 2. Guess C and E with typical values
+                    C_guess = 1.9
+                    E_guess = 0.97
+                    
+                    # 3. Estimate cornering stiffness (slope near origin) to guess B
+                    # Find a point close to the origin to calculate the initial slope
+                    near_origin_df = data[(abs(x_data) > 0) & (abs(x_data) < 2.0)].copy() # Use data up to 2 degrees
+                    if not near_origin_df.empty:
+                        # Convert to radians for stiffness calculation
+                        near_origin_df['SA_rad'] = np.deg2rad(near_origin_df[map_sa])
+                        cornering_stiffness_estimate = abs(np.mean(near_origin_df[map_fy] / near_origin_df['SA_rad']))
+                        B_guess = cornering_stiffness_estimate / (C_guess * D_guess)
+                    else:
+                        B_guess = 10 # Fallback if no data is near the origin
+                        
+                    initial_guesses = [B_guess, C_guess, D_guess, E_guess]
+                    
+                    # --- Run the Fitter with More Iterations ---
+                    popt, pcov = curve_fit(
+                        magic_formula, 
+                        x_data, 
+                        y_data, 
+                        p0=initial_guesses, 
+                        maxfev=5000  # Increase max function evaluations
+                    )
                 
                 st.success("✅ Fitting complete!")
 
@@ -91,7 +117,7 @@ if uploaded_file is not None:
 
             except Exception as e:
                 st.error(f"An error occurred during fitting: {e}")
-                st.warning("Tip: Make sure the selected columns contain only numeric data and that your CSV is formatted correctly.")
+                st.warning("Tip: This can happen if the data is very noisy or doesn't resemble a typical tire curve.")
     
     except Exception as e:
         st.error(f"Error reading CSV file: {e}")
