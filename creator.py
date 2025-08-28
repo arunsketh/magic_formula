@@ -32,15 +32,23 @@ if uploaded_file is not None:
     # --- Column Mapping ---
     st.sidebar.header("2. Map Data Columns")
     st.sidebar.info("Map the columns in your CSV to the required tire properties.")
+
     
     col_options = list(data.columns)
     # Map all required inputs and outputs
-    map_sa = st.sidebar.selectbox("Slip Angle (SA) Column", col_options, index=col_options.index("SLIP_ANGLE"))
-    map_sr = st.sidebar.selectbox("Slip Ratio (SR) Column", col_options, index=col_options.index("SLIP_RATIO"))
-    map_fz = st.sidebar.selectbox("Normal Load (FZ) Column", col_options, index=col_options.index("NORMAL_LOAD"))
-    map_p = st.sidebar.selectbox("Inflation Pressure (P) Column", col_options, index=col_options.index("INFLATION_PRESSURE"))
-    map_fy = st.sidebar.selectbox("Lateral Force (FY) Column", col_options, index=col_options.index("LATERAL_FORCE"))
-    map_fx = st.sidebar.selectbox("Longitudinal Force (FX) Column", col_options, index=col_options.index("LONGITUDINAL_FORCE"))
+    def get_col_index(name, options):
+        try:
+            return options.index(name)
+        except ValueError:
+            return 0
+    
+    # Map all required inputs and outputs using the safe index function
+    map_sa = st.sidebar.selectbox("Slip Angle (SA) Column", col_options, index=get_col_index("SLIP_ANGLE", col_options))
+    map_sr = st.sidebar.selectbox("Slip Ratio (SR) Column", col_options, index=get_col_index("SLIP_RATIO", col_options))
+    map_fz = st.sidebar.selectbox("Normal Load (FZ) Column", col_options, index=get_col_index("NORMAL_LOAD", col_options))
+    map_p = st.sidebar.selectbox("Inflation Pressure (P) Column", col_options, index=get_col_index("INFLATION_PRESSURE", col_options))
+    map_fy = st.sidebar.selectbox("Lateral Force (FY) Column", col_options, index=get_col_index("LATERAL_FORCE", col_options))
+    map_fx = st.sidebar.selectbox("Longitudinal Force (FX) Column", col_options, index=get_col_index("LONGITUDINAL_FORCE", col_options))
     
     # --- Fitting Controls ---
     st.sidebar.header("3. Run Fitter")
