@@ -2,4 +2,4 @@ streamlit
 pandas
 numpy
 matplotlib
-git+https://github.com/OpenTire/OpenTirePython.git
+git+https://github.com/OpenTire/OpenTirePython.git#egg=opentire&subdirectory=code
